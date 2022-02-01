@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
 use glob::glob;
 use log::{error, info};
-use metaplex_token_metadata::instruction::{
+use mpl_token_metadata::instruction::{
     create_master_edition, create_metadata_accounts, update_metadata_accounts,
 };
 use rayon::prelude::*;
@@ -328,7 +328,7 @@ pub fn mint(
         instructions.push(ix);
     }
 
-    let (recent_blockhash, _) = client.get_recent_blockhash()?;
+    let recent_blockhash = client.get_latest_blockhash()?;
     let tx = Transaction::new_signed_with_payer(
         &instructions,
         Some(&funder.pubkey()),

@@ -2,7 +2,10 @@ use anyhow::{anyhow, Result};
 use glob::glob;
 use indicatif::ParallelProgressIterator;
 use log::{error, info};
-use metaplex_token_metadata::{instruction::update_metadata_accounts, state::Data};
+use mpl_token_metadata::{
+    instruction::{update_metadata_accounts, update_metadata_accounts_v2},
+    state::Data,
+};
 use rayon::prelude::*;
 use retry::{delay::Exponential, retry};
 use solana_client::rpc_client::RpcClient;
@@ -137,7 +140,7 @@ pub fn update_data(
         Some(data),
         None,
     );
-    let (recent_blockhash, _) = client.get_recent_blockhash()?;
+    let recent_blockhash = client.get_latest_blockhash()?;
     let tx = Transaction::new_signed_with_payer(
         &[ix],
         Some(&update_authority),
@@ -215,7 +218,7 @@ pub fn update_uri(
         None,
     );
 
-    let (recent_blockhash, _) = client.get_recent_blockhash()?;
+    let recent_blockhash = client.get_latest_blockhash()?;
     let tx = Transaction::new_signed_with_payer(
         &[ix],
         Some(&update_authority),
@@ -251,7 +254,7 @@ pub fn set_primary_sale_happened(
         None,
         Some(true),
     );
-    let (recent_blockhash, _) = client.get_recent_blockhash()?;
+    let recent_blockhash = client.get_latest_blockhash()?;
     let tx = Transaction::new_signed_with_payer(
         &[ix],
         Some(&update_authority),
@@ -289,7 +292,7 @@ pub fn set_update_authority(
         None,
         None,
     );
-    let (recent_blockhash, _) = client.get_recent_blockhash()?;
+    let recent_blockhash = client.get_latest_blockhash()?;
     let tx = Transaction::new_signed_with_payer(
         &[ix],
         Some(&update_authority),
@@ -315,11 +318,61 @@ pub fn set_update_authority_all(
 
     info!("Setting update_authority...");
     items.par_iter().progress().for_each(|item| {
-        info!("Updating metadata for mint account: {}", item);
-
         // If someone uses a json list that contains a mint account that has already
         //  been updated this will throw an error. We print that error and continue
         let _ = match set_update_authority(client, keypair, &item, &new_update_authority) {
+            Ok(_) => {}
+            Err(error) => {
+                error!("Error occurred! {}", error)
+            }
+        };
+    });
+
+    Ok(())
+}
+
+pub fn set_immutable(client: &RpcClient, keypair: &String, account: &String) -> Result<()> {
+    let keypair = parse_keypair(keypair)?;
+    let program_id = Pubkey::from_str(METAPLEX_PROGRAM_ID)?;
+    let mint_account = Pubkey::from_str(account)?;
+
+    let update_authority = keypair.pubkey();
+
+    let metadata_account = get_metadata_pda(mint_account);
+
+    let ix = update_metadata_accounts_v2(
+        program_id,
+        metadata_account,
+        update_authority,
+        None,
+        None,
+        None,
+        Some(false),
+    );
+    let recent_blockhash = client.get_latest_blockhash()?;
+    let tx = Transaction::new_signed_with_payer(
+        &[ix],
+        Some(&update_authority),
+        &[&keypair],
+        recent_blockhash,
+    );
+
+    let sig = client.send_and_confirm_transaction(&tx)?;
+    info!("Tx sig: {:?}", sig);
+    println!("Tx sig: {:?}", sig);
+
+    Ok(())
+}
+
+pub fn set_immutable_all(client: &RpcClient, keypair: &String, json_file: &String) -> Result<()> {
+    let file = File::open(json_file)?;
+    let items: Vec<String> = serde_json::from_reader(file)?;
+
+    info!("Setting immutable...");
+    items.par_iter().progress().for_each(|item| {
+        // If someone uses a json list that contains a mint account that has already
+        //  been updated this will throw an error. We print that error and continue
+        let _ = match set_immutable(client, keypair, &item) {
             Ok(_) => {}
             Err(error) => {
                 error!("Error occurred! {}", error)

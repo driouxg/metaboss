@@ -9,6 +9,7 @@ use crate::opt::*;
 use crate::sign::{sign_all, sign_one};
 use crate::snapshot::{snapshot_cm_accounts, snapshot_holders, snapshot_mints};
 use crate::update_metadata::*;
+use crate::withdraw::{withdraw, WithdrawArgs};
 
 pub fn process_burn(client: &RpcClient, commands: BurnSubcommands) -> Result<()> {
     match commands {
@@ -20,9 +21,10 @@ pub fn process_decode(client: &RpcClient, commands: DecodeSubcommands) -> Result
     match commands {
         DecodeSubcommands::Mint {
             account,
+            full,
             list_file,
             ref output,
-        } => decode_metadata(client, account.as_ref(), list_file.as_ref(), output)?,
+        } => decode_metadata(client, account.as_ref(), full, list_file.as_ref(), output)?,
     }
     Ok(())
 }
@@ -93,6 +95,14 @@ pub fn process_set(client: &RpcClient, commands: SetSubcommands) -> Result<()> {
             &mint_accounts_file,
             &new_update_authority,
         ),
+        SetSubcommands::Immutable {
+            keypair,
+            mint_account,
+        } => set_immutable(&client, &keypair, &mint_account),
+        SetSubcommands::ImmutableAll {
+            keypair,
+            mint_accounts_file,
+        } => set_immutable_all(&client, &keypair, &mint_accounts_file),
     }
 }
 
@@ -147,5 +157,18 @@ pub fn process_update(client: &RpcClient, commands: UpdateSubcommands) -> Result
         UpdateSubcommands::UriAll { keypair, json_file } => {
             update_uri_all(&client, &keypair, &json_file)
         }
+    }
+}
+
+pub fn process_withdraw(rpc_url: String, commands: WithdrawSubcommands) -> Result<()> {
+    match commands {
+        WithdrawSubcommands::CMV2 {
+            candy_machine_id,
+            keypair,
+        } => withdraw(WithdrawArgs {
+            rpc_url,
+            keypair,
+            candy_machine_id,
+        }),
     }
 }

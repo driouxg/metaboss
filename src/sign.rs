@@ -1,9 +1,7 @@
 use anyhow::{anyhow, Result};
 use indicatif::ParallelProgressIterator;
 use log::{error, info};
-use metaplex_token_metadata::{
-    instruction::sign_metadata, state::Metadata, ID as METAPLEX_PROGRAM_ID,
-};
+use mpl_token_metadata::{instruction::sign_metadata, state::Metadata, ID as METAPLEX_PROGRAM_ID};
 use rayon::prelude::*;
 use retry::{delay::Exponential, retry};
 use solana_client::rpc_client::RpcClient;
@@ -81,7 +79,7 @@ pub fn sign_all(
 }
 
 pub fn sign(client: &RpcClient, creator: &Keypair, metadata_pubkey: Pubkey) -> Result<Signature> {
-    let (recent_blockhash, _) = client.get_recent_blockhash()?;
+    let recent_blockhash = client.get_latest_blockhash()?;
     let ix = sign_metadata(METAPLEX_PROGRAM_ID, metadata_pubkey, creator.pubkey());
     let tx = Transaction::new_signed_with_payer(
         &[ix],

@@ -1,5 +1,5 @@
 use anyhow::Result;
-use metaplex_token_metadata::{
+use mpl_token_metadata::{
     id,
     instruction::update_metadata_accounts,
     state::{Data, Metadata},
@@ -79,7 +79,7 @@ pub fn burn(
         instructions.push(clear_metadata_account);
     }
 
-    let (recent_blockhash, _) = client.get_recent_blockhash()?;
+    let recent_blockhash = client.get_latest_blockhash()?;
     let tx = Transaction::new_signed_with_payer(
         &instructions,
         Some(&signer.pubkey()),

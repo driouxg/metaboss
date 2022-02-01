@@ -68,6 +68,11 @@ pub enum Command {
         #[structopt(subcommand)]
         snapshot_subcommands: SnapshotSubcommands,
     },
+    /// Withdraw
+    Withdraw {
+        #[structopt(subcommand)]
+        withdraw_subcommands: WithdrawSubcommands,
+    },
 }
 
 #[derive(Debug, StructOpt)]
@@ -92,6 +97,10 @@ pub enum DecodeSubcommands {
         /// Single mint account to decode
         #[structopt(short, long)]
         account: Option<String>,
+
+        /// Use this to write the full metadata struct to the output
+        #[structopt(long)]
+        full: bool,
 
         /// Path to JSON file containing a list of mint accounts to decode
         #[structopt(short, long)]
@@ -224,6 +233,26 @@ pub enum SetSubcommands {
         /// New update authority address
         #[structopt(short = "u", long)]
         new_update_authority: String,
+    },
+    /// Set is-mutable to false, preventing any future updates to the NFT
+    #[structopt(name = "immutable")]
+    Immutable {
+        /// Path to the creator's keypair file
+        #[structopt(short, long)]
+        keypair: String,
+
+        /// Mint account of corresponding metadata to update
+        #[structopt(short, long)]
+        mint_account: String,
+    },
+    ImmutableAll {
+        /// Path to the creator's keypair file
+        #[structopt(short, long)]
+        keypair: String,
+
+        /// Path to JSON mint accounts file
+        #[structopt(short, long)]
+        mint_accounts_file: String,
     },
 }
 
@@ -367,5 +396,19 @@ pub enum UpdateSubcommands {
         /// JSON file with list of mint accounts and new URIs
         #[structopt(short = "u", long)]
         json_file: String,
+    },
+}
+
+#[derive(Debug, StructOpt)]
+pub enum WithdrawSubcommands {
+    /// Withdraw funds from a candy machine v2
+    #[structopt(name = "cm-v2")]
+    CMV2 {
+        /// Candy Machine V2 ID
+        candy_machine_id: String,
+
+        /// Path to the creator's keypair file
+        #[structopt(short, long)]
+        keypair: String,
     },
 }
