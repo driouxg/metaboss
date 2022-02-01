@@ -1,0 +1,11 @@
+version: "3.1"
+
+services:
+  metaboss:
+    build: ./
+    container_name: metaboss
+    environment:
+      - ENVIRONMENT=production
+    volumes:
+      - ./main.sh:/app/main.sh
+      - ./keypair.json:/keypair.json
